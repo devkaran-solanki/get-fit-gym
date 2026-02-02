@@ -1,8 +1,26 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { MapPin, Phone, Clock, Instagram, Facebook, Twitter, ArrowRight, CheckCircle, X, Loader2, Sparkles, AlertTriangle, Shield } from 'lucide-react';
 import RevealOnScroll from '../common/RevealOnScroll';
 import CustomSelect from '../common/CustomSelect';
 import { submitContactForm, getRateLimitStatus, formatTimeUntilReset } from '../../utils/contactForm';
+
+// Pre-generate stable particle configurations
+const PARTICLE_COUNT = 24;
+const generateParticles = () => {
+    return Array.from({ length: PARTICLE_COUNT }, (_, i) => ({
+        id: i,
+        left: 5 + (Math.random() * 90),
+        top: 5 + (Math.random() * 90),
+        size: 4 + (Math.random() * 6),
+        duration: 3 + (Math.random() * 4),
+        delay: Math.random() * 2,
+        isRed: i % 3 !== 0,
+        useAlt: i % 2 === 0,
+    }));
+};
+
+// Generate particles once at module load
+const PARTICLES = generateParticles();
 
 // Success Modal Component
 const SuccessModal = ({ isOpen, onClose, formData }) => {
@@ -27,21 +45,42 @@ const SuccessModal = ({ isOpen, onClose, formData }) => {
                 onClick={onClose}
             />
 
-            {/* Animated particles/confetti effect */}
+            {/* Animated floating particles effect */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                {[...Array(20)].map((_, i) => (
+                <style>{`
+                    @keyframes floatParticle {
+                        0%, 100% { transform: translateY(0px) scale(1); }
+                        25% { transform: translateY(-15px) scale(1.1); }
+                        50% { transform: translateY(-8px) scale(0.95); }
+                        75% { transform: translateY(-20px) scale(1.05); }
+                    }
+                    @keyframes floatParticleAlt {
+                        0%, 100% { transform: translateY(0px) translateX(0px) scale(1); }
+                        33% { transform: translateY(-18px) translateX(8px) scale(1.15); }
+                        66% { transform: translateY(-10px) translateX(-5px) scale(0.9); }
+                    }
+                    @keyframes glowPulse {
+                        0%, 100% { box-shadow: 0 0 6px currentColor; opacity: 0.5; }
+                        50% { box-shadow: 0 0 20px currentColor, 0 0 30px currentColor; opacity: 0.8; }
+                    }
+                `}</style>
+                {PARTICLES.map((particle) => (
                     <div
-                        key={i}
-                        className="absolute w-2 h-2 rounded-full animate-pulse"
+                        key={particle.id}
+                        className="absolute rounded-full"
                         style={{
-                            left: `${Math.random() * 100}%`,
-                            top: `${Math.random() * 100}%`,
-                            backgroundColor: i % 2 === 0 ? '#dc2626' : '#fbbf24',
-                            animationDelay: `${Math.random() * 2}s`,
-                            animationDuration: `${2 + Math.random() * 3}s`,
+                            left: `${particle.left}%`,
+                            top: `${particle.top}%`,
+                            width: `${particle.size}px`,
+                            height: `${particle.size}px`,
+                            backgroundColor: particle.isRed ? '#dc2626' : '#fbbf24',
+                            color: particle.isRed ? '#dc2626' : '#fbbf24',
                             opacity: isVisible ? 0.6 : 0,
                             transform: isVisible ? 'scale(1)' : 'scale(0)',
-                            transition: `all ${0.5 + Math.random() * 0.5}s ease-out ${i * 0.05}s`
+                            transition: `opacity 0.6s ease-out ${particle.id * 0.04}s, transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) ${particle.id * 0.04}s`,
+                            animation: isVisible
+                                ? `${particle.useAlt ? 'floatParticleAlt' : 'floatParticle'} ${particle.duration}s ease-in-out ${particle.delay}s infinite, glowPulse ${particle.duration * 0.7}s ease-in-out ${particle.delay}s infinite`
+                                : 'none',
                         }}
                     />
                 ))}

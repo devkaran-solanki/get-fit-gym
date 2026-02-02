@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <!-- Gradient definitions -->
+  <defs>
+    <linearGradient id="barGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#dc2626"/>
+      <stop offset="100%" style="stop-color:#991b1b"/>
+    </linearGradient>
+    <linearGradient id="weightGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff"/>
+      <stop offset="50%" style="stop-color:#e5e5e5"/>
+      <stop offset="100%" style="stop-color:#a3a3a3"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Center bar -->
+  <rect x="8" y="14" width="16" height="4" rx="1" fill="url(#barGradient)"/>
+  
+  <!-- Left weights -->
+  <rect x="4" y="10" width="4" height="12" rx="1" fill="url(#weightGradient)"/>
+  <rect x="1" y="12" width="3" height="8" rx="0.5" fill="url(#weightGradient)"/>
+  
+  <!-- Right weights -->
+  <rect x="24" y="10" width="4" height="12" rx="1" fill="url(#weightGradient)"/>
+  <rect x="28" y="12" width="3" height="8" rx="0.5" fill="url(#weightGradient)"/>
+</svg>
