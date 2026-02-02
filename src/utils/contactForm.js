@@ -120,17 +120,6 @@ export async function submitContactForm(formData) {
         );
     }
 
-    // In development mode, show a helpful message
-    if (!import.meta.env.PROD) {
-        console.log('📧 Contact Form Submission (Development Mode)');
-        console.log('Form Data:', formData);
-        console.log('Note: Form submissions only work when deployed to Vercel.');
-
-        throw new Error(
-            'Contact form is disabled in development. Deploy to Vercel to enable submissions.'
-        );
-    }
-
     try {
         const response = await fetch('/api/contact', {
             method: 'POST',

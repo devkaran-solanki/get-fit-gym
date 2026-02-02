@@ -5,17 +5,18 @@ import CustomSelect from '../common/CustomSelect';
 import { submitContactForm, getRateLimitStatus, formatTimeUntilReset } from '../../utils/contactForm';
 
 // Pre-generate stable particle configurations
-const PARTICLE_COUNT = 24;
+const PARTICLE_COUNT = 20;
 const generateParticles = () => {
     return Array.from({ length: PARTICLE_COUNT }, (_, i) => ({
         id: i,
-        left: 5 + (Math.random() * 90),
-        top: 5 + (Math.random() * 90),
-        size: 4 + (Math.random() * 6),
-        duration: 3 + (Math.random() * 4),
-        delay: Math.random() * 2,
-        isRed: i % 3 !== 0,
-        useAlt: i % 2 === 0,
+        left: Math.random() * 100,
+        top: Math.random() * 100,
+        isRed: i % 2 === 0,
+        appearDelay: (0.5 + Math.random() * 0.5),  // Staggered appear timing
+        appearDuration: (2 + Math.random() * 3),    // Random duration for appear
+        floatDuration: (4 + Math.random() * 3),     // Slow float duration
+        floatDelay: Math.random() * 2,              // Random float start
+        floatType: i % 3,                           // 3 different float patterns
     }));
 };
 
@@ -25,13 +26,17 @@ const PARTICLES = generateParticles();
 // Success Modal Component
 const SuccessModal = ({ isOpen, onClose, formData }) => {
     const [isVisible, setIsVisible] = useState(false);
+    const [showFloat, setShowFloat] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
-            // Small delay to trigger animation
+            // Small delay to trigger appear animation
             setTimeout(() => setIsVisible(true), 50);
+            // Start floating after appear animation completes
+            setTimeout(() => setShowFloat(true), 1500);
         } else {
             setIsVisible(false);
+            setShowFloat(false);
         }
     }, [isOpen]);
 
@@ -45,41 +50,43 @@ const SuccessModal = ({ isOpen, onClose, formData }) => {
                 onClick={onClose}
             />
 
-            {/* Animated floating particles effect */}
+            {/* Animated particles effect */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
                 <style>{`
-                    @keyframes floatParticle {
-                        0%, 100% { transform: translateY(0px) scale(1); }
-                        25% { transform: translateY(-15px) scale(1.1); }
-                        50% { transform: translateY(-8px) scale(0.95); }
-                        75% { transform: translateY(-20px) scale(1.05); }
+                    @keyframes gentleFloat1 {
+                        0%, 100% { transform: translate(0, 0); }
+                        50% { transform: translate(3px, -8px); }
                     }
-                    @keyframes floatParticleAlt {
-                        0%, 100% { transform: translateY(0px) translateX(0px) scale(1); }
-                        33% { transform: translateY(-18px) translateX(8px) scale(1.15); }
-                        66% { transform: translateY(-10px) translateX(-5px) scale(0.9); }
+                    @keyframes gentleFloat2 {
+                        0%, 100% { transform: translate(0, 0); }
+                        33% { transform: translate(-5px, -6px); }
+                        66% { transform: translate(4px, -4px); }
                     }
-                    @keyframes glowPulse {
-                        0%, 100% { box-shadow: 0 0 6px currentColor; opacity: 0.5; }
-                        50% { box-shadow: 0 0 20px currentColor, 0 0 30px currentColor; opacity: 0.8; }
+                    @keyframes gentleFloat3 {
+                        0%, 100% { transform: translate(0, 0); }
+                        25% { transform: translate(2px, -10px); }
+                        75% { transform: translate(-3px, -5px); }
+                    }
+                    @keyframes subtleGlow {
+                        0%, 100% { opacity: 0.5; filter: blur(0px); }
+                        50% { opacity: 0.7; filter: blur(0.5px); }
                     }
                 `}</style>
                 {PARTICLES.map((particle) => (
                     <div
                         key={particle.id}
-                        className="absolute rounded-full"
+                        className="absolute w-2 h-2 rounded-full"
                         style={{
                             left: `${particle.left}%`,
                             top: `${particle.top}%`,
-                            width: `${particle.size}px`,
-                            height: `${particle.size}px`,
                             backgroundColor: particle.isRed ? '#dc2626' : '#fbbf24',
-                            color: particle.isRed ? '#dc2626' : '#fbbf24',
+                            animationDelay: `${particle.appearDelay}s`,
+                            animationDuration: `${particle.appearDuration}s`,
                             opacity: isVisible ? 0.6 : 0,
                             transform: isVisible ? 'scale(1)' : 'scale(0)',
-                            transition: `opacity 0.6s ease-out ${particle.id * 0.04}s, transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) ${particle.id * 0.04}s`,
-                            animation: isVisible
-                                ? `${particle.useAlt ? 'floatParticleAlt' : 'floatParticle'} ${particle.duration}s ease-in-out ${particle.delay}s infinite, glowPulse ${particle.duration * 0.7}s ease-in-out ${particle.delay}s infinite`
+                            transition: `all ${particle.appearDelay}s ease-out ${particle.id * 0.05}s`,
+                            animation: showFloat
+                                ? `gentleFloat${particle.floatType + 1} ${particle.floatDuration}s ease-in-out ${particle.floatDelay}s infinite, subtleGlow ${particle.floatDuration * 0.8}s ease-in-out infinite`
                                 : 'none',
                         }}
                     />
