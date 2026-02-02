@@ -1,7 +1,8 @@
 // Vercel Serverless Function for Contact Form
 // This will automatically work when deployed to Vercel
 
-// In-memory rate limiting store (for serverless, consider using Redis/Upstash for production)
+// In-memory rate limiting store (note: in serverless, this resets on cold starts)
+// For production, consider using Vercel KV, Upstash Redis, or similar
 const rateLimitMap = new Map();
 
 // Configuration
@@ -11,9 +12,10 @@ const MAX_REQUESTS_PER_WINDOW = 3; // Maximum 3 submissions per hour per IP
 // Helper function to get client IP
 function getClientIP(req) {
     return (
+        req.headers.get?.('x-forwarded-for')?.split(',')[0]?.trim() ||
         req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
+        req.headers.get?.('x-real-ip') ||
         req.headers['x-real-ip'] ||
-        req.connection?.remoteAddress ||
         'unknown'
     );
 }
@@ -70,10 +72,28 @@ function validateFormData(data) {
     return errors;
 }
 
+// CORS headers for the API
+const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+};
+
 export default async function handler(req, res) {
+    // Handle CORS preflight
+    if (req.method === 'OPTIONS') {
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+        return res.status(200).end();
+    }
+
     // Only allow POST requests
     if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Method not allowed' });
+        return res.status(405).json({
+            error: 'Method not allowed',
+            message: 'Only POST requests are allowed'
+        });
     }
 
     try {
@@ -85,6 +105,7 @@ export default async function handler(req, res) {
         // Set rate limit headers
         res.setHeader('X-RateLimit-Limit', MAX_REQUESTS_PER_WINDOW);
         res.setHeader('X-RateLimit-Remaining', rateLimitResult.remaining);
+        res.setHeader('Content-Type', 'application/json');
 
         if (rateLimitResult.limited) {
             res.setHeader('X-RateLimit-Reset', rateLimitResult.resetAt);
@@ -96,7 +117,14 @@ export default async function handler(req, res) {
         }
 
         // Parse request body
-        const { name, phone, goal, message, website } = req.body;
+        let body;
+        if (typeof req.body === 'string') {
+            body = JSON.parse(req.body);
+        } else {
+            body = req.body;
+        }
+
+        const { name, phone, goal, message, website } = body;
 
         // Validate form data
         const validationErrors = validateFormData({ name, phone, website });
@@ -127,6 +155,7 @@ export default async function handler(req, res) {
         // TODO: Add your preferred integration here:
         // 
         // Option 1: Send email using Resend (recommended)
+        // const { Resend } = require('resend');
         // const resend = new Resend(process.env.RESEND_API_KEY);
         // await resend.emails.send({
         //     from: 'Get Fit Gym <noreply@yoursite.com>',
