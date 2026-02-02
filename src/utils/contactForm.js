@@ -120,6 +120,23 @@ export async function submitContactForm(formData) {
         );
     }
 
+    // In development mode, simulate a successful submission
+    if (import.meta.env.DEV) {
+        console.log('📧 Contact Form Submission (Development Mode)');
+        console.log('Form Data:', formData);
+
+        // Simulate network delay
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        // Return simulated success
+        return {
+            success: true,
+            message: 'Inquiry submitted successfully (simulated)',
+            inquiryId: `DEV-${Date.now()}`,
+            remaining: 2
+        };
+    }
+
     try {
         const response = await fetch('/api/contact', {
             method: 'POST',

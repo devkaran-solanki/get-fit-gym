@@ -4,39 +4,31 @@ import RevealOnScroll from '../common/RevealOnScroll';
 import CustomSelect from '../common/CustomSelect';
 import { submitContactForm, getRateLimitStatus, formatTimeUntilReset } from '../../utils/contactForm';
 
-// Pre-generate stable particle configurations
-const PARTICLE_COUNT = 20;
-const generateParticles = () => {
-    return Array.from({ length: PARTICLE_COUNT }, (_, i) => ({
-        id: i,
-        left: Math.random() * 100,
-        top: Math.random() * 100,
-        isRed: i % 2 === 0,
-        appearDelay: (0.5 + Math.random() * 0.5),  // Staggered appear timing
-        appearDuration: (2 + Math.random() * 3),    // Random duration for appear
-        floatDuration: (4 + Math.random() * 3),     // Slow float duration
-        floatDelay: Math.random() * 2,              // Random float start
-        floatType: i % 3,                           // 3 different float patterns
-    }));
-};
-
-// Generate particles once at module load
-const PARTICLES = generateParticles();
-
 // Success Modal Component
 const SuccessModal = ({ isOpen, onClose, formData }) => {
     const [isVisible, setIsVisible] = useState(false);
-    const [showFloat, setShowFloat] = useState(false);
+
+    // Pre-generate stable confetti configurations
+    const confetti = useMemo(() =>
+        Array.from({ length: 40 }, (_, i) => {
+            const colors = ['#dc2626', '#fbbf24', '#ffffff', '#ef4444', '#f59e0b'];
+            return {
+                id: i,
+                left: Math.random() * 100,
+                color: colors[Math.floor(Math.random() * colors.length)],
+                size: 6 + Math.random() * 6,
+                delay: Math.random() * 3,
+                duration: 3 + Math.random() * 2,
+                sway: 15 + Math.random() * 20,
+            };
+        }),
+        []);
 
     useEffect(() => {
         if (isOpen) {
-            // Small delay to trigger appear animation
             setTimeout(() => setIsVisible(true), 50);
-            // Start floating after appear animation completes
-            setTimeout(() => setShowFloat(true), 1500);
         } else {
             setIsVisible(false);
-            setShowFloat(false);
         }
     }, [isOpen]);
 
@@ -50,44 +42,43 @@ const SuccessModal = ({ isOpen, onClose, formData }) => {
                 onClick={onClose}
             />
 
-            {/* Animated particles effect */}
+            {/* Falling confetti from top */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
                 <style>{`
-                    @keyframes gentleFloat1 {
-                        0%, 100% { transform: translate(0, 0); }
-                        50% { transform: translate(3px, -8px); }
-                    }
-                    @keyframes gentleFloat2 {
-                        0%, 100% { transform: translate(0, 0); }
-                        33% { transform: translate(-5px, -6px); }
-                        66% { transform: translate(4px, -4px); }
-                    }
-                    @keyframes gentleFloat3 {
-                        0%, 100% { transform: translate(0, 0); }
-                        25% { transform: translate(2px, -10px); }
-                        75% { transform: translate(-3px, -5px); }
-                    }
-                    @keyframes subtleGlow {
-                        0%, 100% { opacity: 0.5; filter: blur(0px); }
-                        50% { opacity: 0.7; filter: blur(0.5px); }
+                    @keyframes confettiFall {
+                        0% {
+                            transform: translateY(-20px) translateX(0) rotate(0deg);
+                            opacity: 1;
+                        }
+                        25% {
+                            transform: translateY(25vh) translateX(var(--sway)) rotate(90deg);
+                        }
+                        50% {
+                            transform: translateY(50vh) translateX(calc(var(--sway) * -1)) rotate(180deg);
+                        }
+                        75% {
+                            transform: translateY(75vh) translateX(var(--sway)) rotate(270deg);
+                        }
+                        100% {
+                            transform: translateY(100vh) translateX(0) rotate(360deg);
+                            opacity: 0.3;
+                        }
                     }
                 `}</style>
-                {PARTICLES.map((particle) => (
+                {isVisible && confetti.map((c) => (
                     <div
-                        key={particle.id}
-                        className="absolute w-2 h-2 rounded-full"
+                        key={c.id}
                         style={{
-                            left: `${particle.left}%`,
-                            top: `${particle.top}%`,
-                            backgroundColor: particle.isRed ? '#dc2626' : '#fbbf24',
-                            animationDelay: `${particle.appearDelay}s`,
-                            animationDuration: `${particle.appearDuration}s`,
-                            opacity: isVisible ? 0.6 : 0,
-                            transform: isVisible ? 'scale(1)' : 'scale(0)',
-                            transition: `all ${particle.appearDelay}s ease-out ${particle.id * 0.05}s`,
-                            animation: showFloat
-                                ? `gentleFloat${particle.floatType + 1} ${particle.floatDuration}s ease-in-out ${particle.floatDelay}s infinite, subtleGlow ${particle.floatDuration * 0.8}s ease-in-out infinite`
-                                : 'none',
+                            position: 'absolute',
+                            left: `${c.left}%`,
+                            top: '-20px',
+                            width: `${c.size}px`,
+                            height: `${c.size * 0.6}px`,
+                            backgroundColor: c.color,
+                            borderRadius: '2px',
+                            '--sway': `${c.sway}px`,
+                            animation: `confettiFall ${c.duration}s ease-in-out ${c.delay}s infinite`,
+                            opacity: 0.9,
                         }}
                     />
                 ))}
@@ -113,11 +104,24 @@ const SuccessModal = ({ isOpen, onClose, formData }) => {
                 {/* Success Icon */}
                 <div className="relative flex justify-center mb-8">
                     <div className="relative">
-                        {/* Outer ring animation */}
-                        <div className={`absolute inset-0 w-24 h-24 border-4 border-red-600/30 rounded-full transition-all duration-1000 ${isVisible ? 'scale-150 opacity-0' : 'scale-100 opacity-100'}`}
-                            style={{ animationDelay: '0.3s' }}
-                        />
-                        <div className={`absolute inset-0 w-24 h-24 border-4 border-red-500/20 rounded-full transition-all duration-1000 delay-200 ${isVisible ? 'scale-[1.8] opacity-0' : 'scale-100 opacity-100'}`} />
+                        <style>{`
+                            @keyframes ripple {
+                                0% { transform: scale(1); opacity: 0.8; }
+                                100% { transform: scale(1.8); opacity: 0; }
+                            }
+                        `}</style>
+
+                        {/* Outer ring animations - looping */}
+                        {isVisible && (
+                            <>
+                                <div className="absolute inset-0 w-24 h-24 border-4 border-red-600/30 rounded-full"
+                                    style={{ animation: 'ripple 2s cubic-bezier(0, 0, 0.2, 1) infinite' }}
+                                />
+                                <div className="absolute inset-0 w-24 h-24 border-4 border-red-500/20 rounded-full"
+                                    style={{ animation: 'ripple 2s cubic-bezier(0, 0, 0.2, 1) infinite 0.5s' }}
+                                />
+                            </>
+                        )}
 
                         {/* Main icon container */}
                         <div className={`w-24 h-24 bg-gradient-to-br from-red-600 to-red-700 rounded-full flex items-center justify-center shadow-xl shadow-red-600/30 transition-all duration-500 ${isVisible ? 'scale-100' : 'scale-0'}`}>
@@ -171,7 +175,7 @@ const SuccessModal = ({ isOpen, onClose, formData }) => {
                     </button>
                 </div>
             </div>
-        </div>
+        </div >
     );
 };
 
@@ -315,7 +319,7 @@ const Contact = () => {
                                         { icon: <Phone size={24} />, title: "Call Us", lines: ["+91 98765 43210", "+91 91234 56789"] },
                                         { icon: <Clock size={24} />, title: "Working Hours", lines: ["Mon - Sat: 6:00 AM - 10:00 PM", "Sunday: Closed"] }
                                     ].map((item, idx) => (
-                                        <div key={idx} className="flex items-start gap-5 group p-4 -m-4 rounded-sm hover:bg-neutral-900/50 transition-all duration-300">
+                                        <div key={idx} className="flex items-start gap-5 group p-4 -m-4 rounded-sm transition-all duration-300">
                                             <div className="w-14 h-14 bg-gradient-to-br from-neutral-800 to-neutral-900 border border-neutral-800 flex items-center justify-center text-red-500 group-hover:border-red-600/50 group-hover:shadow-[0_0_20px_rgba(220,38,38,0.2)] transition-all duration-500 rounded-sm">
                                                 {item.icon}
                                             </div>
